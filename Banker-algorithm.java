@@ -90,7 +90,7 @@ public class BankerAlgorithm {
             System.arraycopy(tempNeed, 0, this.need, 0, numProcesses);
             JOptionPane.showMessageDialog(null, "Success: Request granted.");
         } else {
-            JOptionPane.showMessageDialog(null, "Error: Request would cause unsafe state. Request denied.");
+            JOptionPane.showMessageDialog(null, "Error: Request would cause unsafe state (Deadlock). Request denied.");
         }
     }
 
