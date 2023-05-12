@@ -1,156 +1,160 @@
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.*;
+import javax.swing.JOptionPane;
 
-public class BankersAlgorithm extends JFrame {
-    JTextField textTotalRes, textAvailableRes;
-    JTextField processID, maxMatrix, allocationMatrix, needMatrix;
-    JButton requestButton, calculateButton;
-    JLabel labelProcessID, labelAllocatedRes, labelMaxRes, labelNeededRes;
-    
-    int totalRes[];
-    int availableRes[];
-    int allocation[][];
-    int max[][];
-    int need[][];
-    int processCount;
-    
-    BankersAlgorithm(){
-        setLayout(new GridLayout(10,2));
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        
-        labelProcessID = new JLabel("Enter Process ID: ");
-        add(labelProcessID);
-        processID = new JTextField();
-        add(processID);
-        
-        labelTotalRes = new JLabel("Total Resources: ");
-        add(labelTotalRes);
-        textTotalRes = new JTextField();
-        add(textTotalRes);
-        
-        labelAvailableRes = new JLabel("Available Resources: ");
-        add(labelAvailableRes);
-        textAvailableRes = new JTextField();
-        add(textAvailableRes);
-        
-        labelAllocatedRes = new JLabel("Allocated Resources: ");
-        add(labelAllocatedRes);
-        allocationMatrix = new JTextField();
-        add(allocationMatrix);
-        
-        labelMaxRes = new JLabel("Maximum Resources: ");
-        add(labelMaxRes);
-        maxMatrix = new JTextField();
-        add(maxMatrix);
-        
-        labelNeededRes = new JLabel("Needed Resources: ");
-        add(labelNeededRes);
-        needMatrix = new JTextField();
-        add(needMatrix);
-        
-        requestButton = new JButton("Request Resources");
-        add(requestButton);
-        requestButton.addActionListener(new ActionListener(){
-            public void actionPerformed(ActionEvent e){
-                resourceRequest();
+public class BankerAlgorithm {
+    private int[][] allocation;
+    private int[][] max;
+    private int[][] need;
+    private int[] available;
+    private int numProcesses;
+    private int numResources;
+
+    public BankerAlgorithm(int[][] allocation, int[][] max, int[] available) {
+        this.allocation = allocation;
+        this.max = max;
+        this.available = available;
+        this.numProcesses = allocation.length;
+        this.numResources = available.length;
+        this.need = new int[numProcesses][numResources];
+
+        // calculate need matrix
+        for (int i = 0; i < numProcesses; i++) {
+            for (int j = 0; j < numResources; j++) {
+                this.need[i][j] = this.max[i][j] - this.allocation[i][j];
             }
-        });
-        
-        calculateButton = new JButton("Calculate Safe Sequence");
-        add(calculateButton);
-        calculateButton.addActionListener(new ActionListener(){
-            public void actionPerformed(ActionEvent e){
-                safeSequence();
-            }
-        });
-        
-        setSize(500,500);
-        setVisible(true);
-    }
-    
-    public void resourceRequest(){
-        
-        int processID = Integer.parseInt(this.processID.getText());
-        int requestedRes[] = new int[totalRes.length];
-        for(int i=0; i<totalRes.length; i++){
-            requestedRes[i] = Integer.parseInt(JOptionPane.showInputDialog("Requested " + i + " resource"));
-        }
-        
-        
-        if( bankerAlgo(processID, requestedRes) ){
-            JOptionPane.showMessageDialog(null, "Request granted!");
-        }else{
-            JOptionPane.showMessageDialog(null, "Request denied!"); 
         }
     }
-    
-    public boolean bankerAlgo(int processID, int requestedRes[]){
-         
-        int availableRes[] = new int[totalRes.length];
-        for(int i=0; i<availableRes.length; i++){
-            availableRes[i] = this.availableRes[i] + allocation[processID][i] - requestedRes[i];
-        }
-        int needRes[] = new int[totalRes.length];
-        for(int i=0; i<needRes.length; i++){
-            needRes[i] = max[processID][i] - requestedRes[i];
-        }
-        
-        
-        for(int i=0; i<totalRes.length; i++){
-            if(requestedRes[i] > needRes[i] || requestedRes[i] > availableRes[i])
+
+    public boolean isSafeState() {
+        boolean[] finish = new boolean[numProcesses];
+        int[] work = new int[numResources];
+        System.arraycopy(available, 0, work, 0, numResources);
+
+        int count = 0;
+        while (count < numProcesses) {
+            boolean found = false;
+            for (int i = 0; i < numProcesses; i++) {
+                if (!finish[i]) {
+                    int j;
+                    for (j = 0; j < numResources; j++) {
+                        if (this.need[i][j] > work[j])
+                            break;
+                    }
+
+                    if (j == numResources) {
+                        for (int k = 0; k < numResources; k++)
+                            work[k] += allocation[i][k];
+                        finish[i] = true;
+                        found = true;
+                        count++;
+                    }
+                }
+            }
+
+            if (!found)
                 return false;
         }
-        
-         
-        for(int i=0; i<processCount; i++){
-            if(i != processID){
-                if(!bankerAlgo(i, requestedRes))
-                    return false;
-            }
-        }
+
         return true;
     }
-    
-    public void safeSequence(){
-        
-        int workAvailable[] = new int[totalRes.length];
-        int workNeed[][] = new int[processCount][totalRes.length];
-        for(int i=0; i<totalRes.length; i++){
-            workAvailable[i] = availableRes[i];
-            for(int j=0; j<processCount; j++){
-                workNeed[j][i] = need[j][i];
+
+    public void requestResource(int processId, int[] request) {
+        for (int j = 0; j < numResources; j++) {
+            if (request[j] > this.need[processId][j]) {
+                JOptionPane.showMessageDialog(null, "Error: Request exceeds maximum claim.");
+                return;
             }
-        } 
-        
-        
-        int safeSeq[] = new int[processCount];
-        int count = 0;
-        while(count < processCount){
-            boolean found = false;
-            for(int i=0; i<processCount; i++){
-                int j;
-                for(j=0; j<totalRes.length; j++){
-                    if(workNeed[i][j] > workAvailable[j])
-                        break;
-                }
-                if(j == totalRes.length){   
-                    found = true;
-                    safeSeq[count++] = i;
-                    for(int k=0; k<totalRes.length; k++)
-                        workAvailable[k] += allocation[i][k];
-                    workNeed[i][j] = 0;
-                }  
+            if (request[j] > this.available[j]) {
+                JOptionPane.showMessageDialog(null, "Error: Not enough resources available.");
+                return;
             }
-            if(!found)   
-                JOptionPane.showMessageDialog(null, "System is in Deadlock!");
         }
-        
-        
-        String safeSeqStr = "Safe Sequence: < ";
-        for(int i=0; i<safeSeq.length; i++)
-            safeSeqStr += safeSeq[i] + " ";
-        safeSeqStr += ">";
-        JOptionPane.showMessageDialog(null, safeSeqStr);
+
+        // pretend to allocate resources temporarily
+        int[] tempAvailable = new int[numResources];
+        System.arraycopy(this.available, 0, tempAvailable, 0, numResources);
+        int[][] tempAllocation = new int[numProcesses][numResources];
+        System.arraycopy(this.allocation, 0, tempAllocation, 0, numProcesses);
+        int[][] tempNeed = new int[numProcesses][numResources];
+        System.arraycopy(this.need, 0, tempNeed, 0, numProcesses);
+
+        for (int j = 0; j < numResources; j++) {
+            tempAvailable[j] -= request[j];
+            tempAllocation[processId][j] += request[j];
+            tempNeed[processId][j] -= request[j];
+        }
+
+        BankerAlgorithm tempBanker = new BankerAlgorithm(tempAllocation, this.max, tempAvailable);
+        if (tempBanker.isSafeState()) {
+            // commit allocation
+            System.arraycopy(tempAvailable, 0, this.available, 0, numResources);
+            System.arraycopy(tempAllocation, 0, this.allocation, 0, numProcesses);
+            System.arraycopy(tempNeed, 0, this.need, 0, numProcesses);
+            JOptionPane.showMessageDialog(null, "Success: Request granted.");
+        } else {
+            JOptionPane.showMessageDialog(null, "Error: Request would cause unsafe state. Request denied.");
+        }
+    }
+
+    public static void main(String[] args) {
+        int numProcesses = Integer.parseInt(JOptionPane.showInputDialog(null, "Enter number of processes:"));
+        int numResources = Integer.parseInt(JOptionPane.showInputDialog(null, "Enter number of resources:"));
+
+        int[][] allocation = new int[numProcesses][numResources];
+        int[][] max = new int[numProcesses][numResources];
+        int[] available = new int[numResources];
+
+        for (int i = 0; i < numProcesses; i++) {
+            String[] line = JOptionPane.showInputDialog(null, "Enter current allocation for process " + i).split("\\s+");
+            for (int j = 0; j < numResources; j++)
+                allocation[i][j] = Integer.parseInt(line[j]);
+        }
+    
+        for (int i = 0; i < numProcesses; i++) {
+            String[] line = JOptionPane.showInputDialog(null, "Enter maximum need for process " + i).split("\\s+");
+            for (int j = 0; j <numResources ;j++)
+                max[i][j] = Integer.parseInt(line[j]);
+        }
+        String[] line = JOptionPane.showInputDialog(null, "Enter available resources:").split("\\s+");
+        for (int j = 0; j < numResources; j++)
+            available[j] = Integer.parseInt(line[j]);
+
+        BankerAlgorithm banker = new BankerAlgorithm(allocation, max, available);
+
+        // Menu for interacting with the banker algorithm
+        String menu = "Banker's Algorithm\n\n" +
+                "1. Check if the system is in a safe state\n" +
+                "2. Request resources for a process\n" +
+                "3. Exit\n";
+
+        boolean exit = false;
+        while (!exit) {
+            int choice = Integer.parseInt(JOptionPane.showInputDialog(null, menu));
+
+            switch (choice) {
+                case 1:
+                    boolean isSafe = banker.isSafeState();
+                    if (isSafe) {
+                        JOptionPane.showMessageDialog(null, "The system is in a safe state.");
+                    } else {
+                        JOptionPane.showMessageDialog(null, "The system is in an unsafe state.");
+                    }
+                    break;
+                case 2:
+                    int processId = Integer.parseInt(JOptionPane.showInputDialog(null, "Enter the process ID:"));
+                    line = JOptionPane.showInputDialog(null, "Enter the resource request:").split("\\s+");
+                    int[] request = new int[numResources];
+                    for (int j = 0; j < numResources; j++)
+                        request[j] = Integer.parseInt(line[j]);
+
+                    banker.requestResource(processId, request);
+                    break;
+                case 3:
+                    exit = true;
+                    break;
+                default:
+                    JOptionPane.showMessageDialog(null, "Invalid choice. Please try again.");
+                    break;
+            }
+        }
     }
 }
