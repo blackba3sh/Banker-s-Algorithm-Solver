@@ -69,7 +69,6 @@ public class BankerAlgorithm {
             }
         }
 
-        // pretend to allocate resources temporarily
         int[] tempAvailable = new int[numResources];
         System.arraycopy(this.available, 0, tempAvailable, 0, numResources);
         int[][] tempAllocation = new int[numProcesses][numResources];
@@ -85,7 +84,7 @@ public class BankerAlgorithm {
 
         BankerAlgorithm tempBanker = new BankerAlgorithm(tempAllocation, this.max, tempAvailable);
         if (tempBanker.isSafeState()) {
-            // commit allocation
+            
             System.arraycopy(tempAvailable, 0, this.available, 0, numResources);
             System.arraycopy(tempAllocation, 0, this.allocation, 0, numProcesses);
             System.arraycopy(tempNeed, 0, this.need, 0, numProcesses);
@@ -120,7 +119,7 @@ public class BankerAlgorithm {
 
         BankerAlgorithm banker = new BankerAlgorithm(allocation, max, available);
 
-        // Menu for interacting with the banker algorithm
+        
         String menu = "Banker's Algorithm\n\n" +
                 "1. Check if the system is in a safe state\n" +
                 "2. Request resources for a process\n" +
